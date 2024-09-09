@@ -9,7 +9,7 @@ use super::{bitboard::Bitboard, piece::Piece, square::Square};
 // T - To
 // D - Data
 // Move: FFFFFFTTTTTTDDDD (16-bit word)
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Move(u16);
 
 impl Move {
@@ -23,11 +23,11 @@ impl Move {
         Move(source | target | promotion)
     }
 
-    pub fn from(&self) -> Square {
+    pub fn source(&self) -> Square {
         Square::ALL[(self.0 >> 10) as usize]
     }
 
-    pub fn to(&self) -> Square {
+    pub fn target(&self) -> Square {
         Square::ALL[0b111111 & (self.0 >> 4) as usize]
     }
 
@@ -42,7 +42,7 @@ impl Move {
     }
 
     pub fn bitboard(&self) -> Bitboard {
-        self.from().bitboard() | self.to().bitboard()
+        self.source().bitboard() | self.target().bitboard()
     }
 }
 
@@ -56,10 +56,47 @@ impl Display for Move {
                 Piece::Queen => 'q',
                 _ => unreachable!(),
             };
-            write!(f, "{}{}{}", self.from(), self.to(), promotion_char)
+            write!(f, "{}{}{}", self.source(), self.target(), promotion_char)
         } else {
-            write!(f, "{}{}", self.from(), self.to())
+            write!(f, "{}{}", self.source(), self.target())
         }
+    }
+}
+
+#[derive(Debug)]
+pub struct ParseMoveError;
+
+impl TryFrom<&str> for Move {
+    type Error = ParseMoveError;
+
+    fn try_from(value: &str) -> Result<Self, Self::Error> {
+        let length = value.len();
+        if length != 4 && length != 5 {
+            return Err(ParseMoveError);
+        }
+
+        let Ok(source) = Square::try_from(&value[0..2]) else {
+            return Err(ParseMoveError);
+        };
+        let Ok(target) = Square::try_from(&value[2..4]) else {
+            return Err(ParseMoveError);
+        };
+
+        let promotion = if length == 5 {
+            let promotion_ch = value.as_bytes()[4];
+
+            match promotion_ch {
+                b'n' => Some(Piece::Knight),
+                b'b' => Some(Piece::Bishop),
+                b'r' => Some(Piece::Rook),
+                b'q' => Some(Piece::Queen),
+                _ => return Err(ParseMoveError),
+            }
+        } else {
+            None
+        };
+
+        Ok(Move::new(source, target, promotion))
     }
 }
 
@@ -85,8 +122,8 @@ mod tests {
     fn test_new_move() {
         let mv = Move::new(Square::E2, Square::E4, Some(Piece::Rook));
 
-        assert_eq!(mv.from(), Square::E2);
-        assert_eq!(mv.to(), Square::E4);
+        assert_eq!(mv.source(), Square::E2);
+        assert_eq!(mv.target(), Square::E4);
         assert_eq!(mv.promotion(), Some(Piece::Rook));
     }
 

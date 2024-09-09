@@ -5,7 +5,7 @@ use crate::r#static::generation::coords;
 use super::bitboard::Bitboard;
 
 #[repr(u8)]
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Square {
     A1,
     B1,

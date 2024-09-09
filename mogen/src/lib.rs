@@ -303,7 +303,7 @@ mod tests {
 
         let mut mask = Bitboard::EMPTY;
         for mv in &moves {
-            mask |= mv.to().bitboard();
+            mask |= mv.target().bitboard();
         }
 
         assert_eq!(mask, Bitboard(0x182442800284482));
@@ -320,7 +320,7 @@ mod tests {
 
         let mut mask = Bitboard::EMPTY;
         for mv in moves {
-            mask |= mv.to().bitboard();
+            mask |= mv.target().bitboard();
         }
 
         assert_eq!(mask, Bitboard(0x2800284480));
@@ -338,7 +338,7 @@ mod tests {
 
         let mut mask = Bitboard::EMPTY;
         for mv in &moves {
-            mask |= mv.to().bitboard();
+            mask |= mv.target().bitboard();
         }
 
         assert_eq!(mask, Bitboard(0x10101010101010ef));
@@ -354,7 +354,7 @@ mod tests {
 
         mask = Bitboard::EMPTY;
         for mv in &moves {
-            mask |= mv.to().bitboard();
+            mask |= mv.target().bitboard();
         }
 
         assert_eq!(mask, Bitboard(0x101010ec));
@@ -372,7 +372,7 @@ mod tests {
 
         let mut mask = Bitboard::EMPTY;
         for mv in moves {
-            mask |= mv.to().bitboard();
+            mask |= mv.target().bitboard();
         }
 
         assert_eq!(mask, Bitboard(0x3828300000));
@@ -478,8 +478,8 @@ mod tests {
 
         assert_eq!(moves.len(), 1);
 
-        assert_eq!(moves[0].from(), Square::E6);
-        assert_eq!(moves[0].to(), Square::F7);
+        assert_eq!(moves[0].source(), Square::E6);
+        assert_eq!(moves[0].target(), Square::F7);
         assert_eq!(moves[0].promotion(), None);
 
         moves.clear();
@@ -498,8 +498,8 @@ mod tests {
         assert_ne!(first.promotion(), None);
 
         for mv in &moves[1..] {
-            assert_eq!(first.from(), mv.from());
-            assert_eq!(first.to(), mv.to());
+            assert_eq!(first.source(), mv.source());
+            assert_eq!(first.target(), mv.target());
             assert_ne!(first.promotion(), mv.promotion());
             assert_ne!(mv.promotion(), None);
         }
@@ -519,8 +519,8 @@ mod tests {
 
         assert_eq!(moves.len(), 1);
 
-        assert_eq!(moves[0].from(), Square::E3);
-        assert_eq!(moves[0].to(), Square::F2);
+        assert_eq!(moves[0].source(), Square::E3);
+        assert_eq!(moves[0].target(), Square::F2);
         assert_eq!(moves[0].promotion(), None);
 
         moves.clear();
@@ -539,8 +539,8 @@ mod tests {
         assert_ne!(first.promotion(), None);
 
         for mv in &moves[1..] {
-            assert_eq!(first.from(), mv.from());
-            assert_eq!(first.to(), mv.to());
+            assert_eq!(first.source(), mv.source());
+            assert_eq!(first.target(), mv.target());
             assert_ne!(first.promotion(), mv.promotion());
             assert_ne!(mv.promotion(), None);
         }

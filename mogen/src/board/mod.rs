@@ -229,8 +229,8 @@ impl Board {
         let mut board = self.clone();
         board.flags.set_en_passant(false);
 
-        let from = mv.from();
-        let to = mv.to();
+        let from = mv.source();
+        let to = mv.target();
         let promotion = mv.promotion();
 
         let from_color = if (board.color_bitboard(Color::White) & from.bitboard()).is_empty() {

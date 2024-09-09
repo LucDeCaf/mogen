@@ -55,6 +55,7 @@ fn main() {
 
             println!("---- END DIVIDE RESULTS ----");
         }
-        _ => todo!(),
+
+        Command::Compare { depth } => {}
     }
 }
