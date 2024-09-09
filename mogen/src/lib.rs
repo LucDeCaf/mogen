@@ -104,7 +104,7 @@ impl MoveGen {
 
         while !single_move_targets.is_empty() {
             let target_i = single_move_targets.pop_lsb();
-            let source_i = (target_i as i8 + (8 * color.direction())) as usize;
+            let source_i = (target_i as i8 - (8 * color.direction())) as usize;
 
             let target = Square::ALL[target_i];
             let source = Square::ALL[source_i];
@@ -117,11 +117,12 @@ impl MoveGen {
 
         while !double_move_targets.is_empty() {
             let target_i = double_move_targets.pop_lsb();
-            let source_i = (target_i as i8 + (8 * color.direction())) as usize;
+            let source_i = (target_i as i8 - (16 * color.direction())) as usize;
 
             let target = Square::ALL[target_i];
             let source = Square::ALL[source_i];
 
+            // Double moves never lead to promotion
             moves.push(Move::new(source, target, None));
         }
     }
@@ -134,12 +135,18 @@ impl MoveGen {
             Color::Black => &BLACK_PAWN_CAPTURE_MASKS,
         };
 
+        let en_passant = match board.en_passant_square() {
+            Some(square) => square.bitboard(),
+            None => Bitboard::EMPTY,
+        };
+
         let mut pawns = board.bitboard(Piece::Pawn, color);
         while !pawns.is_empty() {
             let source_i = pawns.pop_lsb();
             let source = Square::ALL[source_i];
 
-            let mut targets = capture_masks[source_i] & enemy_pieces;
+            let capture_mask = capture_masks[source_i];
+            let mut targets = (capture_mask & enemy_pieces) | (capture_mask & en_passant);
 
             while !targets.is_empty() {
                 let target_i = targets.pop_lsb();
@@ -217,7 +224,6 @@ impl Default for MoveGen {
 #[cfg(test)]
 mod tests {
     use board::bitboard::Bitboard;
-    use r#static::generation::coords;
 
     use super::*;
 
@@ -373,125 +379,89 @@ mod tests {
     }
 
     #[test]
-    fn test_white_pawn_moves() {
-        const RANK_2: Bitboard = Bitboard(0x000000000000ff00);
-
+    fn test_pawn_moves() {
         let mut board = Board::new();
 
-        *board.piece_bitboard_mut(Piece::Pawn) = RANK_2;
-        *board.color_bitboard_mut(Color::White) = RANK_2;
+        board.add_piece(Piece::Pawn, Color::White, Square::E2);
+        board.add_piece(Piece::Pawn, Color::Black, Square::D7);
 
         let mut moves = Vec::new();
 
-        // Single + double
-        MoveGen::pawn_moves(&board, Color::White, &mut moves);
+        MoveGen::pawn_moves(&board, board.active_color, &mut moves);
+        assert_eq!(moves.len(), 2);
 
-        assert_eq!(moves.len(), 16);
-
-        let mut mask = Bitboard::EMPTY;
         for mv in &moves {
-            mask |= mv.to().bitboard();
-
-            let (_source_rank, source_file) = coords(mv.from() as u8);
-            let (_target_rank, target_file) = coords(mv.to() as u8);
-
-            assert_eq!(source_file, target_file);
+            assert!(
+                *mv == Move::new(Square::E2, Square::E4, None)
+                    || *mv == Move::new(Square::E2, Square::E3, None)
+            );
         }
 
-        assert_eq!(mask, Bitboard(0x00000000ffff0000));
-
-        // Doubles blocked
-        *board.piece_bitboard_mut(Piece::Knight) = RANK_2 << 16;
-        *board.color_bitboard_mut(Color::White) = RANK_2 | (RANK_2 << 16);
-
+        board = board.make_move(Move::new(Square::E2, Square::E4, None));
         moves.clear();
 
-        MoveGen::pawn_moves(&board, Color::White, &mut moves);
+        MoveGen::pawn_moves(&board, board.active_color, &mut moves);
+        assert_eq!(moves.len(), 2);
 
-        assert_eq!(moves.len(), 8);
-
-        mask = Bitboard::EMPTY;
         for mv in &moves {
-            mask |= mv.to().bitboard();
-
-            let (source_rank, source_file) = coords(mv.from() as u8);
-            let (target_rank, target_file) = coords(mv.to() as u8);
-
-            assert_eq!(source_file, target_file);
-            assert_eq!(source_rank.abs_diff(target_rank), 1);
+            assert!(
+                *mv == Move::new(Square::D7, Square::D5, None)
+                    || *mv == Move::new(Square::D7, Square::D6, None)
+            );
         }
 
-        assert_eq!(mask, Bitboard(0x0000000000ff0000));
-
-        // All moves blocked
-        *board.piece_bitboard_mut(Piece::Knight) = RANK_2 << 8;
-        *board.color_bitboard_mut(Color::White) = RANK_2 | (RANK_2 << 8);
-
+        board = board.make_move(Move::new(Square::D7, Square::D6, None));
         moves.clear();
-        MoveGen::pawn_moves(&board, Color::White, &mut moves);
 
-        assert_eq!(moves.len(), 0);
+        MoveGen::pawn_moves(&board, board.active_color, &mut moves);
+        assert_eq!(moves.len(), 1);
+        assert_eq!(moves[0], Move::new(Square::E4, Square::E5, None));
+
+        board = board.make_move(moves[0]);
+        moves.clear();
+
+        MoveGen::pawn_moves(&board, board.active_color, &mut moves);
+        assert_eq!(moves.len(), 1);
+        assert_eq!(moves[0], Move::new(Square::D6, Square::D5, None));
     }
 
     #[test]
-    fn test_black_pawn_moves() {
-        const RANK_7: Bitboard = Bitboard(0x00ff000000000000);
-
+    fn test_pawn_captures() {
         let mut board = Board::new();
-
-        *board.piece_bitboard_mut(Piece::Pawn) |= RANK_7;
-        *board.color_bitboard_mut(Color::Black) |= RANK_7;
+        board.add_piece(Piece::Pawn, Color::White, Square::A2);
+        board.add_piece(Piece::Pawn, Color::Black, Square::B3);
+        board.add_piece(Piece::Pawn, Color::Black, Square::H3);
 
         let mut moves = Vec::new();
 
-        // Single + double
-        MoveGen::pawn_moves(&board, Color::Black, &mut moves);
+        MoveGen::pawn_captures(&board, board.active_color, &mut moves);
+        assert_eq!(moves.len(), 1);
 
-        assert_eq!(moves.len(), 16);
+        assert_eq!(moves[0], Move::new(Square::A2, Square::B3, None));
 
-        let mut mask = Bitboard::EMPTY;
-        for mv in &moves {
-            mask |= mv.to().bitboard();
-
-            let (_source_rank, source_file) = coords(mv.from() as u8);
-            let (_target_rank, target_file) = coords(mv.to() as u8);
-
-            assert_eq!(source_file, target_file);
-        }
-
-        assert_eq!(mask, Bitboard(0x0000ffff00000000));
-
-        // Doubles blocked
-        *board.piece_bitboard_mut(Piece::Knight) = RANK_7 >> 16;
-        *board.color_bitboard_mut(Color::Black) = RANK_7 | (RANK_7 >> 16);
-
+        board.active_color = Color::Black;
         moves.clear();
 
-        MoveGen::pawn_moves(&board, Color::Black, &mut moves);
+        MoveGen::pawn_captures(&board, board.active_color, &mut moves);
+        assert_eq!(moves.len(), 1);
 
-        assert_eq!(moves.len(), 8);
+        assert_eq!(moves[0], Move::new(Square::B3, Square::A2, None));
+    }
 
-        mask = Bitboard::EMPTY;
-        for mv in &moves {
-            mask |= mv.to().bitboard();
+    #[test]
+    fn test_pawn_en_passant() {
+        let mut board = Board::new();
+        board.add_piece(Piece::Pawn, Color::White, Square::E2);
+        board.add_piece(Piece::Pawn, Color::Black, Square::D4);
 
-            let (source_rank, source_file) = coords(mv.from() as u8);
-            let (target_rank, target_file) = coords(mv.to() as u8);
+        board = board.make_move(Move::new(Square::E2, Square::E4, None));
 
-            assert_eq!(source_file, target_file);
-            assert_eq!(source_rank.abs_diff(target_rank), 1);
-        }
+        let mut moves = Vec::new();
 
-        assert_eq!(mask, Bitboard(0x0000ff0000000000));
+        MoveGen::pawn_captures(&board, board.active_color, &mut moves);
+        assert_eq!(moves.len(), 1);
 
-        // All moves blocked
-        *board.piece_bitboard_mut(Piece::Knight) = RANK_7 >> 8;
-        *board.color_bitboard_mut(Color::Black) = RANK_7 | (RANK_7 >> 8);
-
-        moves.clear();
-        MoveGen::pawn_moves(&board, Color::Black, &mut moves);
-
-        assert_eq!(moves.len(), 0);
+        assert_eq!(moves[0], Move::new(Square::D4, Square::E3, None));
     }
 
     #[test]

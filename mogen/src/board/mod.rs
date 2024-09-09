@@ -211,6 +211,20 @@ impl Board {
         None
     }
 
+    pub fn en_passant_square(&self) -> Option<Square> {
+        if !self.flags.can_en_passant() {
+            return None;
+        }
+
+        let file = self.flags.en_passant_file();
+        let rank = match self.active_color {
+            Color::White => 5,
+            Color::Black => 2,
+        };
+
+        Some(Square::from_coords(rank, file))
+    }
+
     pub fn make_move(&self, mv: Move) -> Self {
         let mut board = self.clone();
         board.flags.set_en_passant(false);
@@ -277,6 +291,8 @@ impl Board {
         } else {
             *board.piece_bitboard_mut(from_piece) ^= to.bitboard();
         }
+
+        board.active_color = self.active_color.inverse();
 
         board
     }

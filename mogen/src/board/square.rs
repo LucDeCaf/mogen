@@ -144,6 +144,10 @@ impl Square {
     pub fn bitboard(&self) -> Bitboard {
         Bitboard(1 << *self as u8)
     }
+
+    pub fn from_coords(rank: u8, file: u8) -> Self {
+        Square::ALL[(rank * 8 + file) as usize]
+    }
 }
 
 impl Display for Square {
@@ -242,10 +246,20 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_display() {
+    fn test_square_display() {
         assert_eq!(format!("{}", Square::E4), "e4");
         assert_eq!(format!("{}", Square::A7), "a7");
         assert_eq!(format!("{}", Square::B3), "b3");
         assert_eq!(format!("{}", Square::H8), "h8");
+    }
+
+    #[test]
+    fn test_square_from_coords() {
+        let squares = [Square::E7, Square::A2, Square::C8, Square::H1, Square::F6];
+
+        for square in squares {
+            let (rank, file) = coords(square as u8);
+            assert_eq!(square, Square::from_coords(rank, file));
+        }
     }
 }
