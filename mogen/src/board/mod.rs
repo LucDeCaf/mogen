@@ -103,14 +103,16 @@ impl Board {
             return Err(ParseFenError::WrongSectionCount);
         };
 
-        for ch in castling_rights.chars() {
-            board.flags.0 |= match ch {
-                'K' => Flags::WHITE_KINGSIDE,
-                'Q' => Flags::WHITE_QUEENSIDE,
-                'k' => Flags::BLACK_KINGSIDE,
-                'q' => Flags::BLACK_QUEENSIDE,
-                _ => return Err(ParseFenError::BadCastlingRights),
-            };
+        if castling_rights != "-" {
+            for ch in castling_rights.chars() {
+                board.flags.0 |= match ch {
+                    'K' => Flags::WHITE_KINGSIDE,
+                    'Q' => Flags::WHITE_QUEENSIDE,
+                    'k' => Flags::BLACK_KINGSIDE,
+                    'q' => Flags::BLACK_QUEENSIDE,
+                    _ => return Err(ParseFenError::BadCastlingRights),
+                };
+            }
         }
 
         let Some(en_passant) = parts.next() else {
@@ -146,30 +148,29 @@ impl Board {
             }
         }
 
-        let Some(halfmoves) = parts.next() else {
-            return Err(ParseFenError::WrongSectionCount);
-        };
-
-        if let Ok(value) = halfmoves.parse::<u8>() {
-            board.halfmoves = value;
+        if let Some(halfmoves) = parts.next() {
+            if let Ok(value) = halfmoves.parse::<u8>() {
+                board.halfmoves = value;
+            } else {
+                return Err(ParseFenError::BadHalfmoves);
+            }
         } else {
-            return Err(ParseFenError::BadHalfmoves);
+            board.halfmoves = 0;
         }
 
-        let Some(fullmoves) = parts.next() else {
-            return Err(ParseFenError::WrongSectionCount);
-        };
-
-        if let Ok(value) = fullmoves.parse::<u16>() {
-            board.fullmoves = value;
+        if let Some(fullmoves) = parts.next() {
+            if let Ok(value) = fullmoves.parse::<u16>() {
+                board.fullmoves = value;
+            } else {
+                return Err(ParseFenError::BadFullmoves);
+            }
         } else {
-            return Err(ParseFenError::BadFullmoves);
-        }
+            board.fullmoves = 1;
+        };
 
         Ok(board)
     }
 
-    // TODO: Add tests
     pub fn fen(&self) -> String {
         let mut fen = String::new();
 
@@ -199,7 +200,11 @@ impl Board {
                 fen.push(piece_char);
             }
 
-            if rank < 7 {
+            if squares_since_piece > 0 {
+                fen.push_str(&squares_since_piece.to_string());
+            }
+
+            if rank > 0 {
                 fen.push('/');
             }
         }
@@ -526,5 +531,18 @@ mod tests {
         assert_eq!(board.piece_bitboard(Piece::Pawn), Bitboard(0x100000000000));
         assert_eq!(board.color_bitboard(Color::White), Bitboard(0x100000000000));
         assert_eq!(board.color_bitboard(Color::Black), Bitboard::EMPTY);
+    }
+
+    #[test]
+    fn test_fen_generation() {
+        const FENS: [&str; 3] = [
+            "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
+            "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1",
+            "8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - - 0 1",
+        ];
+
+        for fen in FENS {
+            assert_eq!(Board::from_fen(fen).unwrap().fen(), fen)
+        }
     }
 }
