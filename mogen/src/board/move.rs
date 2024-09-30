@@ -9,7 +9,7 @@ use super::{bitboard::Bitboard, piece::Piece, square::Square};
 // T - To
 // D - Data
 // Move: FFFFFFTTTTTTDDDD (16-bit word)
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Move(u16);
 
 impl Move {
