@@ -169,6 +169,47 @@ impl Board {
         Ok(board)
     }
 
+    pub fn fen(&self) -> String {
+        let mut fen = String::new();
+
+        // TODO: Test position string generation
+
+        // * Position string
+        for rank in (0..8).rev() {
+            let mut squares_since_piece = 0;
+
+            for file in 0..8 {
+                let square = Square::from_coords(rank, file);
+
+                let Some(piece) = self.piece_at(square) else {
+                    squares_since_piece += 1;
+                    continue;
+                };
+                let color = self.color_at(square).unwrap();
+
+                let general_piece_char = char::from(piece);
+                let piece_char = match color {
+                    Color::White => general_piece_char.to_ascii_uppercase(),
+                    Color::Black => general_piece_char.to_ascii_lowercase(),
+                };
+
+                if squares_since_piece > 0 {
+                    fen.push_str(&squares_since_piece.to_string());
+                    squares_since_piece = 0;
+                }
+                fen.push(piece_char);
+            }
+
+            if rank < 7 {
+                fen.push('/');
+            }
+        }
+
+        // TODO: Implement current turn, castling, EP, halfmoves, fullmoves
+
+        fen
+    }
+
     pub fn all_pieces(&self) -> Bitboard {
         self.color_bitboard(Color::White) | self.color_bitboard(Color::Black)
     }
@@ -206,6 +247,22 @@ impl Board {
             if !(bitboard & mask).is_empty() {
                 return Some(Piece::ALL[i]);
             }
+        }
+
+        None
+    }
+
+    pub fn color_at(&self, square: Square) -> Option<Color> {
+        let mask = square.bitboard();
+
+        let white = self.color_bitboard(Color::White);
+        if !(white & mask).is_empty() {
+            return Some(Color::White);
+        }
+
+        let black = self.color_bitboard(Color::Black);
+        if !(black & mask).is_empty() {
+            return Some(Color::Black);
         }
 
         None
