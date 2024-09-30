@@ -71,7 +71,7 @@ pub struct CompareResult {
     mogen_total: u32,
 }
 
-// TODO: Make stockfish moves work with any board
+// TODO: Test if this loads FEN string correctly for Stockfish
 pub fn compare(board: &Board, depth: u8) -> CompareResult {
     let mut stockfish = Command::new("stockfish")
         .stdin(Stdio::piped())
@@ -79,7 +79,8 @@ pub fn compare(board: &Board, depth: u8) -> CompareResult {
         .spawn()
         .unwrap();
 
-    let cmd = format!("go perft {depth}\n");
+    let fen = board.fen();
+    let cmd = format!("uci\nucinewgame\nposition fen {fen}\ngo perft {depth}\n");
 
     let mut stdin = stockfish.stdin.take().unwrap();
     let mut stdout = BufReader::new(stockfish.stdout.take().unwrap());
