@@ -1,3 +1,12 @@
 [workspace]
 resolver = "2"
 members = ["mogen", "mogen_test"]
+
+[profile.release]
+opt-level = 3
+codegen-units = 1
+lto = "fat"
+panic = "abort"
+
+[profile.dev]
+opt-level = 3
