@@ -169,10 +169,9 @@ impl Board {
         Ok(board)
     }
 
+    // TODO: Add tests
     pub fn fen(&self) -> String {
         let mut fen = String::new();
-
-        // TODO: Test position string generation
 
         // * Position string
         for rank in (0..8).rev() {
@@ -207,8 +206,6 @@ impl Board {
 
         fen.push(' ');
 
-        // TODO: Add EP, halfmoves, fullmoves
-
         // * Active color
         fen.push_str(match self.active_color {
             Color::White => "w ",
@@ -242,6 +239,30 @@ impl Board {
         }
 
         fen.push(' ');
+
+        // * En passant
+        if self.flags.can_en_passant() {
+            let file = self.flags.en_passant_file();
+            let rank = match self.active_color {
+                Color::White => 2,
+                Color::Black => 5,
+            };
+
+            let square = Square::from_coords(rank, file);
+
+            fen.push_str(&square.to_string());
+        } else {
+            fen.push('-');
+        }
+
+        fen.push(' ');
+
+        // * Halfmoves
+        fen.push_str(&self.halfmoves.to_string());
+        fen.push(' ');
+
+        // * Fullmoves
+        fen.push_str(&self.fullmoves.to_string());
 
         fen
     }
