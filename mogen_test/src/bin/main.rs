@@ -56,6 +56,14 @@ fn main() {
             println!("---- END DIVIDE RESULTS ----");
         }
 
-        Command::Compare { depth } => {}
+        Command::Compare { depth } => {
+            let results = perft::compare(&board, depth);
+
+            println!("---- START DIVIDE RESULTS ----");
+
+            // TODO: Implement extra/missing move detection, check for move ordering, check if results match
+
+            println!("---- END DIVIDE RESULTS ----");
+        }
     }
 }

@@ -205,7 +205,43 @@ impl Board {
             }
         }
 
-        // TODO: Implement current turn, castling, EP, halfmoves, fullmoves
+        fen.push(' ');
+
+        // TODO: Add EP, halfmoves, fullmoves
+
+        // * Active color
+        fen.push_str(match self.active_color {
+            Color::White => "w ",
+            Color::Black => "b ",
+        });
+
+        // * Castling rights
+        let mut some_rights = false;
+        if self.flags.kingside(Color::White) {
+            some_rights = true;
+            fen.push('K');
+        }
+
+        if self.flags.queenside(Color::White) {
+            some_rights = true;
+            fen.push('Q');
+        }
+
+        if self.flags.kingside(Color::Black) {
+            some_rights = true;
+            fen.push('k');
+        }
+
+        if self.flags.queenside(Color::Black) {
+            some_rights = true;
+            fen.push('q');
+        }
+
+        if !some_rights {
+            fen.push('-');
+        }
+
+        fen.push(' ');
 
         fen
     }
