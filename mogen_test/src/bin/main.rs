@@ -1,4 +1,4 @@
-use std::collections::HashSet;
+use std::{cmp::Ordering, collections::HashSet};
 
 use clap::{Parser, Subcommand};
 use mogen::board::{r#move::Move, Board};
@@ -63,7 +63,6 @@ fn main() {
 
             println!("---- START COMPARE RESULTS ----\n");
 
-            // TODO: Implement extra/missing move detection, check for move ordering, check if results match
             let mut move_set = HashSet::new();
             for k in results.stockfish_results.keys() {
                 move_set.insert(*k);
@@ -76,8 +75,8 @@ fn main() {
             moves.sort_unstable();
 
             println!(
-                "{: <8} {: <12} {: <12} {}\n",
-                "Move", "Mogen", "Stockfish", "Symbol"
+                "{: <8} {: <12} {: <12} Symbol\n",
+                "Move", "Mogen", "Stockfish"
             );
 
             for mv in moves {
@@ -90,12 +89,10 @@ fn main() {
                     None => 0,
                 };
 
-                let symbol = if mogen > stockfish {
-                    "+"
-                } else if mogen < stockfish {
-                    "-"
-                } else {
-                    ""
+                let symbol = match mogen.cmp(&stockfish) {
+                    Ordering::Greater => "+",
+                    Ordering::Less => "-",
+                    Ordering::Equal => "",
                 };
 
                 println!(
