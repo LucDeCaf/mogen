@@ -1,7 +1,10 @@
 use std::{cmp::Ordering, collections::HashSet};
 
 use clap::{Parser, Subcommand};
-use mogen::board::{r#move::Move, Board};
+use mogen::{
+    board::{color::Color, piece::Piece, r#move::Move, square::Square, Board},
+    MoveGen,
+};
 use mogen_test::perft;
 
 #[derive(Parser)]
@@ -10,6 +13,7 @@ struct Cli {
     #[command(subcommand)]
     command: Command,
 
+    #[arg(short, long)]
     fen: Option<String>,
 }
 
@@ -27,6 +31,7 @@ enum Command {
         #[arg(short, long, default_value = "5")]
         depth: u8,
     },
+    Print,
 }
 
 fn main() {
@@ -116,6 +121,16 @@ fn main() {
             println!("\nNode count difference: {}\n", diff);
 
             println!("---- END COMPARE RESULTS ----");
+        }
+        Command::Print => {
+            let mg = MoveGen::new();
+
+            println!("{:?}", board.active_color);
+
+            let mut moves = Vec::new();
+            mg.bishop_moves(&board, Color::White, Square::F1, &mut moves);
+
+            println!("{}", moves[0]);
         }
     }
 }

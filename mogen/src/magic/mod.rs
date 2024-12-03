@@ -227,6 +227,12 @@ mod tests {
         let mask = Bitboard(0x38000a04012082c0);
         let expected_moves = Bitboard(0x8040201400142240);
 
-        assert_eq!(Direction::Diagonal.moves(square, mask), expected_moves)
+        assert_eq!(Direction::Diagonal.moves(square, mask), expected_moves);
+
+        let square = Square::F1;
+        let mask = Bitboard(0x1020);
+        let expected_moves = Bitboard(0x805000);
+
+        assert_eq!(Direction::Diagonal.moves(square, mask), expected_moves);
     }
 }

@@ -223,7 +223,7 @@ impl Default for MoveGen {
 
 #[cfg(test)]
 mod tests {
-    use board::bitboard::Bitboard;
+    use board::{bitboard::Bitboard, r#move};
 
     use super::*;
 
@@ -319,11 +319,25 @@ mod tests {
         assert_eq!(moves.len(), 7);
 
         let mut mask = Bitboard::EMPTY;
-        for mv in moves {
+        for mv in &moves {
             mask |= mv.target().bitboard();
         }
 
         assert_eq!(mask, Bitboard(0x2800284480));
+
+        moves.clear();
+        board = Board::new();
+
+        board.add_piece(Piece::Bishop, Color::White, Square::F1);
+        board.add_piece(Piece::Pawn, Color::Black, Square::E2);
+        move_gen.bishop_moves(&board, Color::White, Square::F1, &mut moves);
+
+        let mut mask = Bitboard::EMPTY;
+        for mv in &moves {
+            mask |= mv.target().bitboard();
+        }
+
+        assert_eq!(mask, Bitboard(0x804000));
     }
 
     #[test]
